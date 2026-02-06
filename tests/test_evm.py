@@ -8,6 +8,7 @@ from tests.utils import encode_address, encode_uint, load_contract_bin
 
 address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"  # vitalik.eth
 address2 = "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB"
+address3 = "0x000000000000000000000000000000000000dEaD"
 
 # use your own key during development to avoid rate limiting the CI job
 fork_url = (
@@ -35,22 +36,23 @@ def test_revm_fork():
 
     assert evm.env.block.timestamp == 100
 
-    vb_before = evm.basic(address)
+    vb_before = evm.basic(address3)
     assert vb_before is not None
+    evm.set_balance(address2, 10000)
 
     # Execute the tx
     evm.message_call(
-        caller=address,
-        to=address2,
+        caller=address2,
+        to=address3,
         value=10000,
         # data
     )
 
-    info = evm.basic(address2)
+    info = evm.basic(address3)
 
     assert info is not None
-    assert vb_before != evm.basic(address)
-    assert info.balance == 10000
+    assert vb_before != evm.basic(address3)
+    assert info.balance == vb_before.balance + 10000
 
 
 def test_fork_storage():
@@ -85,6 +87,18 @@ def test_set_into_storage_old_value():
     old_value = evm.insert_account_storage(weth, 0, 20)
     assert old_value == 10
 
+
+
+def test_storage_dump():
+    evm = EVM()
+    evm.insert_account_storage(address, 0, 10)
+    evm.insert_account_storage(address, 1, 20)
+    evm.insert_account_storage(address, 0, 30)
+
+    dump = evm.storage_dump()
+    assert address in dump
+    assert dump[address][0] == 30
+    assert dump[address][1] == 20
 
 
 def test_deploy():
