@@ -134,6 +134,32 @@ impl EVM {
         Ok(value)
     }
 
+    /// Dump all storage as a mapping: address -> slot -> value.
+    fn storage_dump(&self) -> HashMap<String, HashMap<U256, U256>> {
+        let mut storage_dump: HashMap<String, HashMap<U256, U256>> = HashMap::new();
+
+        for (address, db_account) in self.context.db.get_accounts().iter() {
+            if db_account.storage.is_empty() {
+                continue;
+            }
+            storage_dump.insert(address.to_string(), db_account.storage.clone());
+        }
+
+        for (address, account) in self.context.journaled_state.state.iter() {
+            if account.storage.is_empty() {
+                continue;
+            }
+            let entry = storage_dump
+                .entry(address.to_string())
+                .or_insert_with(HashMap::new);
+            for (slot, value) in account.storage.iter() {
+                entry.insert(*slot, value.present_value);
+            }
+        }
+
+        storage_dump
+    }
+
     /// Get block hash by block number.
     fn block_hash(&mut self, number: U256, py: Python<'_>) -> PyResult<PyObject> {
         let hash = self.context.block_hash(number).map_err(pyerr)?;

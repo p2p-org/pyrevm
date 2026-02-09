@@ -273,6 +273,12 @@ class EVM:
         :return: The storage value.
         """
 
+    def storage_dump(self: "EVM") -> dict[str, dict[int, int]]:
+        """
+        Returns all storage as a mapping of address to slot/value mapping.
+        :return: The storage dump.
+        """
+
     def block_hash(self: "EVM", number: int) -> bytes:
         """
         Returns the block hash of the given number.
